@@ -45,6 +45,8 @@ PostGIS üzerinde tutulan referans toprak poligonları (SoilZones) aşağıdaki 
 
 ## 🛠️ Teknoloji Yığını
 - **Backend Framework:** .NET 10 / C# (ASP.NET Core Web API)
+- **Frontend Framework:** React.js (Vite)
+- **Harita ve CBS:** Leaflet (React-Leaflet)
 - **Veritabanı & Mekânsal Motor:** PostgreSQL 16 + PostGIS Eklentisi
 - **Mekânsal Kütüphane:** NetTopologySuite & NetTopologySuite.IO.GeoJSON
 - **Koordinat Referans Sistemleri (CRS):**

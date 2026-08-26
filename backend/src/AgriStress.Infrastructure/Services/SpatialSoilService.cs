@@ -29,8 +29,18 @@ public class SpatialSoilService : ISpatialSoilService
         var point = geometryFactory.CreatePoint(new Coordinate(longitude, latitude));
 
         // 2. Spatial Query: Hangi SoilZone poligonu bu noktayı içeriyor? (GIST İndeksi üzerinden)
+        // DİKKAT: Veri setimiz (GeoJSON) UTM 35N / TUREF TM30 (EPSG:5254) metre cinsinden koordinatlara sahip.
+        // Bu yüzden gönderilen Lat/Lon değerini ST_Transform ile 5254'e dönüştürüp sorguluyoruz.
         var zone = await _context.SoilZones
-            .FirstOrDefaultAsync(z => z.Boundary != null && z.Boundary.Contains(point));
+            .FromSqlRaw(@"
+                SELECT * FROM ""SoilZones"" 
+                WHERE ""Boundary"" IS NOT NULL 
+                AND ST_Contains(
+                    ""Boundary"", 
+                    ST_SetSRID(ST_Transform(ST_SetSRID(ST_MakePoint({0}, {1}), 4326), 5254), 4326)
+                )
+                LIMIT 1", longitude, latitude)
+            .FirstOrDefaultAsync();
 
         if (zone == null)
         {
