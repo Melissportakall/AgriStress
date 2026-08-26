@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AgriStress.Domain/AgriStress.Domain.csproj" />
+    <Project Path="src/AgriStress.Infrastructure/AgriStress.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/SoilTester/SoilTester.csproj" />
+  </Folder>
+  <Project Path="AgriStress.Api/AgriStress.Api.csproj" />
+</Solution>

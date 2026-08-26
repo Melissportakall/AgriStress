@@ -1,0 +1,6 @@
+@AgriStress.Api_HostAddress = http://localhost:5114
+
+GET {{AgriStress.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
