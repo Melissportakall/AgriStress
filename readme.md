@@ -58,6 +58,11 @@ PostGIS üzerinde tutulan referans toprak poligonları (SoilZones) aşağıdaki 
 2. **PostGIS Mekânsal Kesişim:** Gelen Point(Lon, Lat, 4326) noktası, PostGIS veritabanındaki `SoilZones` poligon katmanıyla `ST_Contains` veya `ST_Intersects` üzerinden eşleştirilir.
 3. **Kural & Stres Motoru:** Poligondan okunan metrikler değerlendirilerek tarlanın Stres Seviyesi ve Önerilen Ürünler Listesi üretilir.
 
+## 🌟 Yeni Eklenen Akıllı Özellikler (Karar Destek Sistemi)
+- **Canlı Hava Durumu (Open-Meteo):** Harita üzerinde tıklanan koordinatın o anki sıcaklık ve rüzgar hızı değerleri ücretsiz Open-Meteo API kullanılarak çekilir ve panele yansıtılır.
+- **Yağış Radarı (RainViewer Heatmap):** Leaflet haritasına entegre edilen "Layers Control" (Katman Kontrolcüsü) sayesinde, tamamen ücretsiz olan RainViewer radar katmanı harita üzerine giydirilebilir. Bu sayede o bölgedeki anlık bulutlanma ve yağış durumu (Isı haritası formatında) görselleştirilir.
+- **👨‍🌾 Akıllı Reçete (Ziraat Kural Motoru):** Toprak analizi sonucunda çıkan azot, fosfor veya organik madde eksiklikleri sadece raporlanmakla kalmaz; `AgronomyRuleEngine` adlı deterministik (kural tabanlı) uzman sistem devreye girerek çifçiye "Dekara X kg DAP gübresi atın" veya "Sonbaharda organik gübre kullanın" şeklinde saniyesinde uygulanabilir ziraat reçeteleri sunar. Yapay zeka API anahtarlarına bağımlı olmadan yüksek performansla çalışır.
+
 ## 📐 Geliştirme Standartları ve Tasarım Kararları
 Projede kod kalitesini (Clean Code) ve kurumsal standartları korumak adına aşağıdaki kurallar uygulanmıştır:
 - **PascalCase C# İsimlendirmeleri ve Entity Mapping:** Veritabanındaki tablo sütun isimleri genelde alt tireli (`org_mad_y`, `teks_ust` vb.) olsa da, C# tarafında Domain entity'lerimiz tamamen PascalCase standardında (örn: `OrganikMaddeYuzdesi`) yazılmış ve EF Core'un `[Column("...")]` attribute'ü kullanılarak tablo sütunlarına haritalanmıştır (Mapping).

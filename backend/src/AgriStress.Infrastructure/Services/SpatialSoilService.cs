@@ -9,10 +9,14 @@ namespace AgriStress.Infrastructure.Services;
 public class SpatialSoilService : ISpatialSoilService
 {
     private readonly AppDbContext _context;
+    private readonly IWeatherService _weatherService;
+    private readonly IAgronomyRuleEngine _ruleEngine;
 
-    public SpatialSoilService(AppDbContext context)
+    public SpatialSoilService(AppDbContext context, IWeatherService weatherService, IAgronomyRuleEngine ruleEngine)
     {
         _context = context;
+        _weatherService = weatherService;
+        _ruleEngine = ruleEngine;
     }
 
     public async Task<SoilAnalysisReport> AnalyzeLocationAsync(double latitude, double longitude)
@@ -104,6 +108,19 @@ public class SpatialSoilService : ISpatialSoilService
         else
         {
             report.GeneralStressLevel = "Yüksek Stres - Toprak ıslahı gerekli";
+        }
+
+        // 5. Hava Durumu Verisi
+        report.Weather = await _weatherService.GetCurrentWeatherAsync(latitude, longitude);
+
+        // 6. Kural Tabanlı Ziraat Danışmanlık Hizmeti
+        if (stressPoints > 0)
+        {
+            report.ImprovementRecipe = _ruleEngine.GetImprovementRecipe(report);
+        }
+        else
+        {
+            report.ImprovementRecipe = "Toprağınız şu an çok sağlıklı görünüyor. Sadece rutin bakımlara devam edebilirsiniz.";
         }
 
         return report;

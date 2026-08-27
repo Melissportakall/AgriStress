@@ -16,6 +16,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 2. Toprak Analiz Servisi (HttpClient ile)
 builder.Services.AddHttpClient<ISoilService, SoilGridsService>();
 
+// 2.5 Hava Durumu Servisi
+builder.Services.AddHttpClient<IWeatherService, OpenMeteoWeatherService>();
+
+// 2.6 Yapay Zeka Danışmanlık Servisi
+builder.Services.AddScoped<IAgronomyRuleEngine, AgronomyRuleEngine>();
+
 // 3. Mekânsal Kural Motoru Servisi (Yeni PostGIS Entegrasyonu)
 builder.Services.AddScoped<ISpatialSoilService, SpatialSoilService>();
 

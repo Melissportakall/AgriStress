@@ -1,5 +1,13 @@
 namespace AgriStress.Domain.Models;
 
+public class WeatherData
+{
+    public double Temperature { get; set; }
+    public double WindSpeed { get; set; }
+    public string? Time { get; set; }
+    public int WeatherCode { get; set; }
+}
+
 public class SoilAnalysisReport
 {
     public double Latitude { get; set; }
@@ -27,4 +35,10 @@ public class SoilAnalysisReport
     public string? RecommendedFruitsVegetables { get; set; }
     public string? RecommendedDryCrops { get; set; }
     public string? RecommendedIrrigatedCrops { get; set; }
+
+    // Hava Durumu Verisi
+    public WeatherData? Weather { get; set; }
+
+    // Ziraat Uzmanı Reçetesi
+    public string? ImprovementRecipe { get; set; }
 }
