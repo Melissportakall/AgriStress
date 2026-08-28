@@ -30,6 +30,9 @@ public class AppDbContext : DbContext
             .Property(s => s.Boundary)
             .HasColumnType("geometry(MultiPolygon, 4326)");
 
+        //bu fonksiyon r-tree hiyerarsisini olusturur.
+        //tüm tarlaları tek tek okuyup her birinin bounding boxını olusturur.
+        //bu kareler db de tutulmaz harddiskte indeks dosyası olarak tutulur.
         modelBuilder.Entity<SoilZone>()
             .HasIndex(s => s.Boundary)
             .HasMethod("GIST"); // Spatial index için GIST kullanımı
