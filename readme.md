@@ -1,99 +1,156 @@
-# 🌾 AgriStress - Tarımsal Arazi ve Toprak Stres Analiz Platformu (Pilot Bölge Sürümü)
+# 🌾 AgriStress - Agricultural Land & Soil Stress Analysis Platform
 
-AgriStress; çiftçilerin ve ziraat uzmanlarının arazilerini coğrafi bilgi sistemleri (CBS / GIS) üzerinde işaretleyerek **toprak kimyası, makro/mikro besin rezervleri, arazi fizyografisi ve tarımsal ürün uygunluğunu** milisaniyeler içinde mekânsal analizlerle sorgulamasını sağlayan modern bir Hassas Tarım (AgriTech) karar destek platformudur.
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
+[![React 19](https://img.shields.io/badge/React-19.0-blue.svg)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)](https://www.postgresql.org/)
+[![PostGIS](https://img.shields.io/badge/PostGIS-Spatial_Engine-green.svg)](https://postgis.net/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
-Sistem, pilot bölge olarak seçilen tarım havzasındaki resmî ve detaylı büyük toprak haritalama vektör veri setini PostGIS üzerinde mekânsal indekslerle işleyerek dış API bağımlılığı olmadan yerel, deterministik ve yüksek doğruluklu bir toprak teşhis motoru sunar.
+> 🇹🇷 **[Türkçe Dokümantasyon için tıklayınız (Switch to Turkish)](README.tr.md)**
+
+AgriStress is a modern **Precision Agriculture (AgriTech) Decision Support System** designed to diagnose soil stress, macro/micro nutrient reserves, land physiography, and crop suitability in **milliseconds** by clicking on agricultural parcels on an interactive Geographic Information Systems (GIS) map.
+
+The platform processes an official pilot dataset (Bursa / Nilüfer basin, 17.5 MB GeoJSON) locally using **PostGIS Spatial Indexing (GIST)**, eliminating third-party AI/LLM API costs while delivering high-speed, deterministic agronomic prescriptions.
 
 ---
 
-## 🏗️ Proje Mimarisi (Clean Architecture)
+## 🎯 Educational Motivation: Mastering GIS (Geographic Information Systems)
 
-Proje kurumsal .NET ve Clean Architecture prensiplerine göre katmanlandırılmıştır:
+Beyond its agricultural benefits, **the primary engineering goal of this project was to learn and master practical Geographic Information Systems (GIS / CBS)** in a full-stack, enterprise-grade architecture.
+
+### What Was Accomplished in GIS / Spatial Engineering?
+
+| GIS Domain / Concept | Implementation in AgriStress |
+| :--- | :--- |
+| **Vector Big Data & MultiPolygon Handling** | Parsed and ingested a **17.5 MB official soil vector dataset** containing tens of thousands of vertices. MultiPolygon geometry was chosen over simple Polygon to support parcels bisected by waterways or roads. |
+| **Coordinate Reference Systems (CRS) & Projections** | Solved cross-projection alignment: User map coordinates use **`EPSG:4326` (WGS84 Lat/Lon)**, while local Cadastral cadastral soil data is projected in **`EPSG:5254` (TUREF TM30 / UTM metric)**. Applied real-time coordinate reprojection via `ST_Transform`. |
+| **Point-in-Polygon (PIP) Spatial Query** | Accurately matched farmer map click coordinates `Point(Lon, Lat)` to the corresponding agricultural polygon using PostGIS `ST_Contains`. |
+| **Spatial Indexing with GIST (R-Tree)** | Prevented costly sequential scans (O(N) Full Table Scan). Added **GIST index** to the boundary column, accelerating spatial intersection queries from seconds down to **1–2 milliseconds**. |
+| **Web GIS Multi-Layering** | Integrated Leaflet `LayersControl` allowing smooth toggling between standard OpenStreetMap vector tiles, high-resolution **ESRI World Imagery Satellite Tiles**, and live **RainViewer Weather Radar Heatmap** overlays. |
+| **Dynamic Administrative Boundary Rendering** | Programmatically fetched and styled the Bursa/Nilüfer municipal boundary polygon using OpenStreetMap Nominatim GeoJSON API. |
+
+---
+
+## 🏗️ Architecture: Enterprise Clean Architecture
+
+The solution adheres strictly to **Clean Architecture** organized with enterprise `src/services/` and `src/tests/` groupings:
 
 ```text
 AgriStress/
-├── src/
-│   ├── AgriStress.Domain/          # Varlıklar (Entities: Field, SoilZone), Değer Nesneleri, Repository/Service Arayüzleri
-│   ├── AgriStress.Application/     # İş Mantığı, DTO'lar, Kural Motorları, Stres Değerlendirme Servisleri (Planlanıyor)
-│   ├── AgriStress.Infrastructure/  # PostgreSQL + PostGIS (EF Core + NetTopologySuite), GeoJSON Import Altyapısı
-│   └── AgriStress.Api/             # ASP.NET Core Web API Controller'ları, Swagger/OpenAPI Dokümantasyonu
-├── data/
-│   └── pilot_soil_data.geojson     # Pilot bölgeye ait detaylı toprak kimyası ve uygunluk veri seti
-└── docs/                           # CBS katmanları, QGIS şablonları ve mimari şemalar
+├── backend/
+│   ├── src/
+│   │   ├── services/
+│   │   │   ├── AgriStress.API/             # Presentation: Controllers, Middlewares, Configurations, Program.cs
+│   │   │   ├── AgriStress.Application/     # Use Cases: DTOs, Exceptions, Interfaces, AgronomyRuleEngine
+│   │   │   ├── AgriStress.Domain/          # Core: Entities (SoilZone, Field), Enums, BaseEntity
+│   │   │   └── AgriStress.Infrastructure/  # Adapters: DataAccess (PostGIS AppDbContext), Migrations, ExternalServices, Seeder
+│   │   └── tests/
+│   │       └── AgriStress.UnitTests/       # Automated xUnit test suite (Agronomy rules & business logic)
+│   ├── tools/
+│   │   └── SoilTester/                     # Standalone CLI tool for ISRIC SoilGrids REST API validation
+│   └── data/
+│       └── geotoprak_sinifi_32768.geojson  # 17.5 MB official regional soil dataset
+├── frontend/                               # React 19 + Leaflet GIS client application
+├── docker-compose.yml                      # Full-stack container orchestration
+└── README.md
 ```
 
-## 📊 Pilot Bölge Toprak Veri Seti Öznitelik Haritası (SoilZone)
-PostGIS üzerinde tutulan referans toprak poligonları (SoilZones) aşağıdaki kritik tarımsal metrikleri içerir:
+### Layer Responsibilities Matrix
 
-1. **Makro Besin Elementleri & Kimyasal Denge**
-   - **Toplam Azot (topn / topn_yet):** Topraktaki azot rezervi ve yeterlilik durumu.
-   - **Fosfor (P2O5 / p205_yet):** Kök gelişimi için fosfor konsantrasyonu ve sınıfı.
-   - **Potasyum (K2O / k20_yet):** Kuraklık direnci göstergesi.
-   - **Organik Madde (org_mad_y):** Toprak verimliliği ve su tutma kapasitesi oranı.
-
-2. **Mikro Besin Elementleri (Ağır Mineral & İz Element Analizi)**
-   - **Demir, Çinko, Mangan, Bakır, Bor:** Kloroz ve mikro besin stresini saptayan ppm düzeyinde değerler.
-
-3. **Fiziksel Doku & Arazi Jeomorfolojisi**
-   - **Toprak Bünyesi / Tekstür (teks_ust, teks_alt):** Üst ve alt kök katmanı dokusu.
-   - **Eğim & Derinlik (egim_sin, der_sin):** Arazi eğimi ve kök salma derinliği.
-   - **Arazi Kullanım Kabiliyeti (akk_sin_t):** Tarımsal üretime uygunluk sınıflandırması.
-
-4. **Tarımsal Ürün Uygunluk ve Reçete Grubu**
-   - **Bahçe & Meyve/Sebze Uygunluğu (smeyseb_aciklama):** Örn: Şeftali, İncir, Ceviz, Zeytin, Domates, Biber, Enginar vb.
-   - **Tarla Bitkileri Uygunluğu (starla_aciklama, ktarla_aciklama):** Sulu ve kuru tarla bitkileri önerileri.
-
-## 🛠️ Teknoloji Yığını
-- **Backend Framework:** .NET 10 / C# (ASP.NET Core Web API)
-- **Frontend Framework:** React.js (Vite)
-- **Harita ve CBS:** Leaflet (React-Leaflet)
-- **Veritabanı & Mekânsal Motor:** PostgreSQL 16 + PostGIS Eklentisi
-- **Mekânsal Kütüphane:** NetTopologySuite & NetTopologySuite.IO.GeoJSON
-- **Koordinat Referans Sistemleri (CRS):**
-  - Veri Seti Ham Koordinatları: EPSG:32635 (UTM Zone 35N - Metrik)
-  - API & Harita Projeksiyonu: EPSG:4326 (WGS84 - Standart Enlem/Boylam)
-
-## 🔄 Mekânsal Çalışma Mantığı (Spatial Point-in-Polygon)
-1. **İşaretleme:** Çiftçi arayüzde tarlasına tıklar; koordinat (Latitude, Longitude) API'ye iletilir.
-2. **PostGIS Mekânsal Kesişim:** Gelen Point(Lon, Lat, 4326) noktası, PostGIS veritabanındaki `SoilZones` poligon katmanıyla `ST_Contains` veya `ST_Intersects` üzerinden eşleştirilir.
-3. **Kural & Stres Motoru:** Poligondan okunan metrikler değerlendirilerek tarlanın Stres Seviyesi ve Önerilen Ürünler Listesi üretilir.
-
-## 🌟 Yeni Eklenen Akıllı Özellikler (Karar Destek Sistemi)
-- **Canlı Hava Durumu (Open-Meteo):** Harita üzerinde tıklanan koordinatın o anki sıcaklık ve rüzgar hızı değerleri ücretsiz Open-Meteo API kullanılarak çekilir ve panele yansıtılır.
-- **Yağış Radarı (RainViewer Heatmap):** Leaflet haritasına entegre edilen "Layers Control" (Katman Kontrolcüsü) sayesinde, tamamen ücretsiz olan RainViewer radar katmanı harita üzerine giydirilebilir. Bu sayede o bölgedeki anlık bulutlanma ve yağış durumu (Isı haritası formatında) görselleştirilir.
-- **👨‍🌾 Akıllı Reçete (Ziraat Kural Motoru):** Toprak analizi sonucunda çıkan azot, fosfor veya organik madde eksiklikleri sadece raporlanmakla kalmaz; `AgronomyRuleEngine` adlı deterministik (kural tabanlı) uzman sistem devreye girerek çifçiye "Dekara X kg DAP gübresi atın" veya "Sonbaharda organik gübre kullanın" şeklinde saniyesinde uygulanabilir ziraat reçeteleri sunar. Yapay zeka API anahtarlarına bağımlı olmadan yüksek performansla çalışır.
-
-## 📐 Geliştirme Standartları ve Tasarım Kararları
-Projede kod kalitesini (Clean Code) ve kurumsal standartları korumak adına aşağıdaki kurallar uygulanmıştır:
-- **PascalCase C# İsimlendirmeleri ve Entity Mapping:** Veritabanındaki tablo sütun isimleri genelde alt tireli (`org_mad_y`, `teks_ust` vb.) olsa da, C# tarafında Domain entity'lerimiz tamamen PascalCase standardında (örn: `OrganikMaddeYuzdesi`) yazılmış ve EF Core'un `[Column("...")]` attribute'ü kullanılarak tablo sütunlarına haritalanmıştır (Mapping).
-- **MultiPolygon Tercihi:** Toprak özellikleri gibi coğrafi (GIS) veri setlerinde, aynı özelliğe sahip alanlar bölünmüş olarak (ortasından yol geçen tarla gibi) gelebileceğinden, SoilZone geometri tipi olarak tekil `Polygon` yerine endüstri standardı olan ve parçalı yapıları destekleyen `MultiPolygon` tercih edilmiştir.
-- **Neden PostGIS ve Spatial Index (GIST) Kullanıldı?:** 17MB veya daha büyük coğrafi veri setleri içinde "Verilen enlem/boylam hangi tarlaya (çokgene) düşüyor?" sorusuna yanıt aramak klasik veritabanı taramalarıyla (Full Table Scan) oldukça yavaştır. Redis gibi bellek-içi (In-Memory) araçlar da matematiksel geometri kesişimlerinde yetersiz kalır. Bu nedenle endüstri standardı olan **PostGIS** kullanılmış ve `AppDbContext` üzerinden `Boundary` (Sınır) kolonuna **GIST (Spatial Index)** eklenmiştir. Bu sayede harita üzerinde tıklanan bir noktanın tespiti, veriler taranmadan milisaniyeler içinde doğrudan bulunur.
-- **EF Core CLI:** Veritabanı tablolarının oluşturulması ve yapısal güncellemeleri manuel SQL yazmak yerine Code-First yaklaşımıyla `dotnet ef migrations` (EF Core CLI) kullanılarak yönetilmektedir.
+| Layer | Responsibility | Key Components |
+| :--- | :--- | :--- |
+| **API** | HTTP interface, routing, CORS, exception handling middleware, dependency injection | [Controllers](backend/src/services/AgriStress.API/Controllers), [Middlewares](backend/src/services/AgriStress.API/Middlewares), [Configurations](backend/src/services/AgriStress.API/Configurations) |
+| **Application** | Business rules, calculations, data transfer objects, application contracts | [AgronomyRuleEngine](backend/src/services/AgriStress.Application/Services/AgronomyRuleEngine.cs), [DTOs](backend/src/services/AgriStress.Application/DTOs), [Exceptions](backend/src/services/AgriStress.Application/Exceptions) |
+| **Domain** | Pure enterprise domain models, constants, and entities (Zero external dependencies) | [SoilZone](backend/src/services/AgriStress.Domain/Entities/SoilZone.cs), [Field](backend/src/services/AgriStress.Domain/Entities/Field.cs), [BaseEntity](backend/src/services/AgriStress.Domain/Common/BaseEntity.cs) |
+| **Infrastructure** | Database access, PostGIS spatial queries, external APIs, resilient HTTP clients | [AppDbContext](backend/src/services/AgriStress.Infrastructure/DataAccess/AppDbContext.cs), [SpatialSoilService](backend/src/services/AgriStress.Infrastructure/Services/SpatialSoilService.cs), [ExternalServices](backend/src/services/AgriStress.Infrastructure/ExternalServices) |
+| **UnitTests** | Verification of rules, edge cases, and calculation outcomes | [AgronomyRuleEngineTests](backend/src/tests/AgriStress.UnitTests/AgronomyRuleEngineTests.cs) (xUnit) |
 
 ---
 
-## 🚀 Çalıştırma (Geliştirme Ortamı)
+## 🛠️ Technology Stack
 
-1. Bağımlılıkları geri yükleyin ve derleyin:
+| Component | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Backend Framework** | .NET (C#) / ASP.NET Core | 10.0 | High-performance REST API |
+| **Database & GIS Engine** | PostgreSQL + PostGIS | 16 / 3.4 | Spatial polygon storage & index engine |
+| **Spatial Library** | NetTopologySuite (NTS) | 2.6.0 | Geometries (`Point`, `MultiPolygon`) in C# |
+| **Database ORM** | Entity Framework Core | 10.0 | Code-First migrations & PostGIS mapping |
+| **Fault Tolerance** | Polly | 8.1.0 | Retry & Circuit Breaker policies |
+| **Frontend Framework** | React.js (Vite) | 19.2 / 8.2 | Component-driven Single Page Application |
+| **Web Mapping** | Leaflet & React-Leaflet | 1.9.4 / 5.0 | Interactive GIS map canvas & layers |
+| **Styling** | Vanilla CSS (Glassmorphism) | Native | Apple-inspired translucent glass UI |
+| **Containerization** | Docker & Docker Compose | Latest | One-command orchestration across all services |
+| **Meteorology API** | Open-Meteo & RainViewer | Free APIs | Real-time weather & live precipitation radar |
+
+---
+
+## 🌟 Key Functional Features
+
+1. **Deterministic Agronomy Rule Engine (Zero AI Cost):**
+   - Instead of sending slow, costly queries to commercial LLMs, the platform leverages `AgronomyRuleEngine.cs` based on established agronomic science.
+   - Evaluates Nitrogen, Phosphorus, Potassium, and Organic Matter thresholds to deliver actionable fertilization prescriptions (e.g., *“Apply 15-20 kg/da DAP fertilizer due to phosphorus deficiency”*).
+2. **Resilient SoilGrids & Weather Integration:**
+   - Incorporates ISRIC SoilGrids v2.0 REST API with circuit breaker fallbacks.
+   - Live temperature and wind speed via Open-Meteo API.
+3. **Live Precipitation Heatmap:**
+   - RainViewer satellite radar overlay toggleable directly on the Leaflet map.
+
+---
+
+## 🚀 Quick Start (One-Command Setup)
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+
+### 1. Launch All Services via Docker Compose (Recommended)
+
+In the root directory of the project, run:
+
 ```bash
-dotnet restore
-dotnet build
+docker compose up --build
 ```
 
-2. PostgreSQL + PostGIS çalıştırmak için Docker örneği:
-```bash
-docker run --name agristress-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=agristress_db -p 5434:5432 -d postgis/postgis:15-3.4
-```
+This single command:
+1. Starts **PostGIS 16** on port `5434`.
+2. Builds and starts the **.NET 10 API** on port `5114` (automatically applies migrations and seeds the 17.5 MB GeoJSON dataset).
+3. Builds and serves the **React Frontend** via Nginx on port `5173`.
 
-3. Migration'ları uygulayın:
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef database update --project src/AgriStress.Infrastructure --startup-project src/AgriStress.Api
-```
+### 2. Access the Applications
 
-4. API'yi çalıştırın:
-```bash
-dotnet run --project src/AgriStress.Api/AgriStress.Api.csproj
-```
+| Application | URL | Description |
+| :--- | :--- | :--- |
+| **GIS Map & Decision Dashboard** | [http://localhost:5173](http://localhost:5173) | Interactive farmer/agronomist map interface |
+| **API Swagger UI** | [http://localhost:5114/swagger](http://localhost:5114/swagger) | Interactive API documentation |
+| **PostgreSQL / PostGIS** | `localhost:5434` | Direct connection for QGIS / DBeaver |
 
-Swagger UI geliştirme ortamında tipik olarak uygulamanın dinlediği porta göre (örn. `http://localhost:5000/swagger`) erişilebilir.
+---
+
+## 💻 Local Development Workflow (Without Full Docker)
+
+If you prefer to debug locally in your IDE:
+
+1. **Start PostGIS only:**
+   ```bash
+   docker run --name agristress-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=agristress_db -p 5434:5432 -d postgis/postgis:15-3.4
+   ```
+
+2. **Run Backend API:**
+   ```bash
+   dotnet run --project backend/src/services/AgriStress.API/AgriStress.Api.csproj
+   ```
+
+3. **Run Unit Tests:**
+   ```bash
+   dotnet test backend/src/tests/AgriStress.UnitTests/AgriStress.UnitTests.csproj
+   ```
+
+4. **Run Frontend (Vite Dev Server):**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+---
+
+

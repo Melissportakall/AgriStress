@@ -1,10 +1,15 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/AgriStress.Domain/AgriStress.Domain.csproj" />
-    <Project Path="src/AgriStress.Infrastructure/AgriStress.Infrastructure.csproj" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/services/">
+    <Project Path="src/services/AgriStress.API/AgriStress.Api.csproj" />
+    <Project Path="src/services/AgriStress.Application/AgriStress.Application.csproj" />
+    <Project Path="src/services/AgriStress.Domain/AgriStress.Domain.csproj" />
+    <Project Path="src/services/AgriStress.Infrastructure/AgriStress.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/tests/">
+    <Project Path="src/tests/AgriStress.UnitTests/AgriStress.UnitTests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/SoilTester/SoilTester.csproj" />
   </Folder>
-  <Project Path="AgriStress.Api/AgriStress.Api.csproj" />
 </Solution>

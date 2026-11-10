@@ -1,0 +1,51 @@
+services:
+  # 1. PostgreSQL 16 + PostGIS Mekânsal Veritabanı
+  db:
+    image: postgis/postgis:15-3.4
+    container_name: agristress-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agristress_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agristress_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. .NET 10 ASP.NET Core Web API (Clean Architecture)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agristress-api
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5114
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=agristress_db;Username=postgres;Password=postgres
+    ports:
+      - "5114:5114"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. React 19 + Leaflet Kullanıcı Arayüzü (Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agristress-frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

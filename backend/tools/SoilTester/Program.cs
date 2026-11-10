@@ -1,7 +1,8 @@
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using AgriStress.Domain.Interfaces;
+using AgriStress.Application.Interfaces;
+using AgriStress.Infrastructure.ExternalServices;
 
 var services = new ServiceCollection();
 services.AddLogging(builder => builder.AddSimpleConsole());
@@ -13,8 +14,8 @@ var logger = loggerFactory.CreateLogger("SoilTester");
 try
 {
     using var httpClient = new HttpClient();
-    var soilLogger = loggerFactory.CreateLogger<AgriStress.Infrastructure.Services.SoilGridsService>();
-    var svc = new AgriStress.Infrastructure.Services.SoilGridsService(httpClient, soilLogger);
+    var soilLogger = loggerFactory.CreateLogger<SoilGridsService>();
+    var svc = new SoilGridsService(httpClient, soilLogger);
 
     logger.LogInformation("Calling GetSoilDataAsync for sample coordinates...");
 
